@@ -176,5 +176,5 @@ fn main() {
             let _ = stdout().flush();
         }
     }
-    println!("Hello, world!");
+    let _ = execute!(io::stdout(), crossterm::cursor::Show);
 }
