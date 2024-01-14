@@ -11,7 +11,7 @@ use std::{
     time::Duration,
 };
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Copy)]
 enum DropSize {
     SMALL,
     MEDIUM,
@@ -60,6 +60,22 @@ impl Drop {
     fn tick(&mut self) {
         self.y += self.speed;
     }
+
+    fn render(&self){
+        let _ = execute!(io::stdout(), MoveTo(self.x, self.y));
+        if self.drop_size == DropSize::SMALL {
+            let _ = execute!(
+                io::stdout(),
+                crossterm::style::SetForegroundColor(crossterm::style::Color::DarkGrey)
+            );
+        } else {
+            let _ = execute!(
+                io::stdout(),
+                crossterm::style::SetForegroundColor(crossterm::style::Color::White)
+            );
+        }
+        print!("{}", self.drop_size);
+    }
 }
 
 fn generate_drop_size() -> DropSize {
@@ -89,6 +105,19 @@ fn flush_resize_events(first_resize: (u16, u16)) -> (u16, u16) {
         }
     }
     last_resize
+}
+
+fn add_new_drops(drops: &mut Vec<Drop>, cols: u16){
+    let max_num_drops = 30;
+    if drops.len() < max_num_drops {
+        for _ in 0..(max_num_drops - drops.len()) {
+            let mut rng = rand::thread_rng();
+            let should_create = generate_random_number(1, 11, &mut rng);
+            if should_create > 5 {
+                drops.push(Drop::new(cols, &mut rng));
+            }
+        }
+    }
 }
 
 fn main() {
@@ -139,31 +168,10 @@ fn main() {
                 crossterm::terminal::Clear(terminal::ClearType::All)
             );
             drops.iter().for_each(|drop| {
-                let _ = execute!(io::stdout(), MoveTo(drop.x, drop.y));
-                if drop.drop_size == DropSize::SMALL {
-                    let _ = execute!(
-                        io::stdout(),
-                        crossterm::style::SetForegroundColor(crossterm::style::Color::DarkGrey)
-                    );
-                } else {
-                    let _ = execute!(
-                        io::stdout(),
-                        crossterm::style::SetForegroundColor(crossterm::style::Color::White)
-                    );
-                }
-                print!("{}", drop.drop_size);
+                drop.render()
             });
 
-            let max_num_drops = 30;
-            if drops.len() < max_num_drops {
-                for _ in 0..(max_num_drops - drops.len()) {
-                    let mut rng = rand::thread_rng();
-                    let should_create = generate_random_number(1, 11, &mut rng);
-                    if should_create > 5 {
-                        drops.push(Drop::new(cols, &mut rng));
-                    }
-                }
-            }
+            add_new_drops(&mut drops, cols);
 
             let _ = stdout().flush();
         }
