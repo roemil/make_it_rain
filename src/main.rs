@@ -39,6 +39,7 @@ impl fmt::Display for DropSize {
     }
 }
 
+//#[derive(Copy, Clone)]
 struct Drop {
     drop_size: DropSize,
     speed: u16,
@@ -61,7 +62,7 @@ impl Drop {
         self.y += self.speed;
     }
 
-    fn render(&self){
+    fn render(&self) {
         let _ = execute!(io::stdout(), MoveTo(self.x, self.y));
         if self.drop_size == DropSize::SMALL {
             let _ = execute!(
@@ -107,7 +108,7 @@ fn flush_resize_events(first_resize: (u16, u16)) -> (u16, u16) {
     last_resize
 }
 
-fn add_new_drops(drops: &mut Vec<Drop>, cols: u16){
+fn add_new_drops(drops: &mut Vec<Drop>, cols: u16) {
     let max_num_drops = 30;
     if drops.len() < max_num_drops {
         for _ in 0..(max_num_drops - drops.len()) {
@@ -155,11 +156,12 @@ fn main() {
                 break;
             }
         } else {
-            // Timeout expired, no event for 1s
-            // TODO: Make it more efficient than doing 2 loops
-            drops.iter_mut().for_each(|drop| drop.tick());
             drops = drops
                 .into_iter()
+                .map(|mut drop| {
+                    drop.tick();
+                    drop
+                })
                 .filter(|drop| drop.y < rows.into())
                 .collect();
 
@@ -167,9 +169,7 @@ fn main() {
                 io::stdout(),
                 crossterm::terminal::Clear(terminal::ClearType::All)
             );
-            drops.iter().for_each(|drop| {
-                drop.render()
-            });
+            drops.iter().for_each(|drop| drop.render());
 
             add_new_drops(&mut drops, cols);
 
