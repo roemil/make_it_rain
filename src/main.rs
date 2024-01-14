@@ -1,6 +1,6 @@
 use crossterm::terminal;
 use crossterm::{
-    cursor::{position, MoveTo},
+    cursor::MoveTo,
     event::{poll, read, Event, KeyCode},
     execute,
 };
@@ -135,9 +135,6 @@ fn main() {
             // It's guaranteed that read() wont block if `poll` returns `Ok(true)`
             let event = read().expect("Could not read");
 
-            if event == Event::Key(KeyCode::Char('c').into()) {
-                println!("Cursor position: {:?}\r", position());
-            }
             if event == Event::Key(KeyCode::Char('+').into()) && loop_time > loop_time_step {
                 loop_time -= loop_time_step;
             }
