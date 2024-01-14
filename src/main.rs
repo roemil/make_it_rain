@@ -154,8 +154,9 @@ fn main() {
                 print!("{}", drop.drop_size);
             });
 
-            if drops.len() < 100 {
-                for _ in 0..(100 - drops.len()) {
+            let max_num_drops = 30;
+            if drops.len() < max_num_drops {
+                for _ in 0..(max_num_drops - drops.len()) {
                     let mut rng = rand::thread_rng();
                     let should_create = generate_random_number(1, 11, &mut rng);
                     if should_create > 5 {
