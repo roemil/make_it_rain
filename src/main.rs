@@ -13,17 +13,17 @@ use std::{
 
 #[derive(PartialEq, Clone, Copy)]
 enum DropSize {
-    SMALL,
-    MEDIUM,
-    LARGE,
+    Small,
+    Medium,
+    Large,
 }
 
-impl DropSize {
-    fn from_int(i: u16) -> DropSize {
-        match i {
-            0 => DropSize::SMALL,
-            1 => DropSize::MEDIUM,
-            2 => DropSize::LARGE,
+impl From<u16> for DropSize {
+    fn from(value: u16) -> Self {
+        match value {
+            0 => DropSize::Small,
+            1 => DropSize::Medium,
+            2 => DropSize::Large,
             _ => panic!("Unknown drop size"),
         }
     }
@@ -32,9 +32,9 @@ impl DropSize {
 impl fmt::Display for DropSize {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            DropSize::SMALL => write!(f, "."),
-            DropSize::MEDIUM => write!(f, ":"),
-            DropSize::LARGE => write!(f, "|"),
+            DropSize::Small => write!(f, "."),
+            DropSize::Medium => write!(f, ":"),
+            DropSize::Large => write!(f, "|"),
         }
     }
 }
@@ -51,9 +51,9 @@ impl Drop {
     fn new(cols: u16, rng: &mut ThreadRng) -> Self {
         let size = generate_drop_size();
         Drop {
-            drop_size: size.clone(),
+            drop_size: size,
             speed: generate_speed(size),
-            x: generate_random_number(0 as u16, cols, rng),
+            x: generate_random_number(0_u16, cols, rng),
             y: 0,
         }
     }
@@ -64,7 +64,7 @@ impl Drop {
 
     fn render(&self) {
         let _ = execute!(io::stdout(), MoveTo(self.x, self.y));
-        if self.drop_size == DropSize::SMALL {
+        if self.drop_size == DropSize::Small {
             let _ = execute!(
                 io::stdout(),
                 crossterm::style::SetForegroundColor(crossterm::style::Color::DarkGrey)
@@ -81,13 +81,13 @@ impl Drop {
 
 fn generate_drop_size() -> DropSize {
     let mut rng = rand::thread_rng();
-    DropSize::from_int(generate_random_number(0 as u16, 3 as u16, &mut rng))
+    DropSize::from(generate_random_number(0_u16, 3_u16, &mut rng))
 }
 
 fn generate_speed(size: DropSize) -> u16 {
-    if size == DropSize::LARGE {
-        return 1;
-    } else if size == DropSize::MEDIUM {
+    if size == DropSize::Large {
+        1
+    } else if size == DropSize::Medium {
         return 2;
     } else {
         return 3;
@@ -95,7 +95,7 @@ fn generate_speed(size: DropSize) -> u16 {
 }
 
 fn generate_random_number(min: u16, max: u16, rng: &mut ThreadRng) -> u16 {
-    rng.gen_range(min.into()..max.into())
+    rng.gen_range(min..max)
 }
 
 fn flush_resize_events(first_resize: (u16, u16)) -> (u16, u16) {
@@ -122,9 +122,9 @@ fn add_new_drops(drops: &mut Vec<Drop>, cols: u16) {
 }
 
 fn main() {
-    let window_size = crossterm::terminal::size().unwrap();
-    let mut cols = window_size.0;
-    let mut rows = window_size.1;
+    let mut window_size = crossterm::terminal::size().unwrap();
+    // let mut cols = window_size.0;
+    // let mut rows = window_size.1;
     let mut loop_time = Duration::from_millis(41);
     let loop_time_step = Duration::from_millis(10);
     let mut drops: Vec<Drop> = Vec::new();
@@ -143,9 +143,7 @@ fn main() {
             }
 
             if let Event::Resize(x, y) = event {
-                let new_size = flush_resize_events((x, y));
-                cols = new_size.0;
-                rows = new_size.1;
+                window_size = flush_resize_events((x, y));
             }
 
             if event == Event::Key(KeyCode::Char('q').into()) {
@@ -159,7 +157,7 @@ fn main() {
                     drop.tick();
                     drop
                 })
-                .filter(|drop| drop.y < rows.into())
+                .filter(|drop| drop.y < window_size.1)
                 .collect();
 
             let _ = execute!(
@@ -168,7 +166,7 @@ fn main() {
             );
             drops.iter().for_each(|drop| drop.render());
 
-            add_new_drops(&mut drops, cols);
+            add_new_drops(&mut drops, window_size.0);
 
             let _ = stdout().flush();
         }
